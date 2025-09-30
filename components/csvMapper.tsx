@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SmartLoader } from "./loader";
 import Image from "next/image";
 import { mapCsvHeadersAI } from "@/utils/mapCsvHeaders";
 import { parseCsv, type ParsedCsvColumns } from "@/utils/parseCsv";
+import FieldMappingComponent from "./fieldMappingComponent";
 
 type StepBoxProps = {
   step: number;
@@ -146,6 +147,8 @@ type UIMapping = {
   textColor?: string;
   bgColor?: string;
   borderColor?: string;
+  outerBorderColor?: string;
+  shadowBoxColor?: string;
 };
 
 const RenderingStep2 = ({
@@ -206,10 +209,10 @@ const RenderingStep2 = ({
   );
 };
 
-const RenderingStep3 = ({}) => {
+const RenderingStep3 = ({ mappings }: { mappings: UIMapping[] }) => {
   return (
-    <div className="w-full h-full">
-      <div className="upper-bo flex flex-col items-start justify-center w-full p-[24px] pb-[12px] gap-[16px]">
+    <div className="w-full h-full flex flex-col">
+      <div className="flex flex-col items-start justify-center w-full p-[24px] pb-[12px] gap-[16px] flex-shrink-0">
         <p className="font-[Geist Variable] font-semibold text-[18px] leading-[100%] tracking-[0%] text-[#0E4259]">
           Smart Field Mapping
         </p>
@@ -218,6 +221,11 @@ const RenderingStep3 = ({}) => {
           next to any mapping to change it. You can map to existing CRM fields
           or create custom fields with different data types.
         </p>
+      </div>
+      <div className="w-full flex-1 min-h-0 flex flex-col items-start justify-start gap-[16px] pt-[12px] px-[24px] pb-[24px] overflow-y-auto">
+        {mappings.map((mapping, index) => (
+          <FieldMappingComponent key={index} {...mapping} />
+        ))}
       </div>
     </div>
   );
@@ -230,18 +238,32 @@ export default function CsvMapper({
   handleCloseModal: () => void;
   fileBuffer?: ArrayBuffer | null;
 }) {
-  const [headerCurrentStep, setHeaderCurrentStep] = useState<number>(1);
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [numberOfColumns, setNumberOfColumns] = useState<number>(0);
-  const [parsedCsv, setParsedCsv] = useState<ParsedCsvColumns | null>(null);
-  const [aiMappings, setAiMappings] = useState<any[] | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [highConfidenceMappings, setHighConfidenceMappings] =
-    useState<number>(0);
+  let [headerCurrentStep, setHeaderCurrentStep] = useState<number>(1);
+  let [currentStep, setCurrentStep] = useState<number>(1);
+  let [numberOfColumns, setNumberOfColumns] = useState<number>(0);
+  let [parsedCsv, setParsedCsv] = useState<ParsedCsvColumns | null>(null);
+  let [aiMappings, setAiMappings] = useState<any[] | null>(null);
+  let [aiLoading, setAiLoading] = useState(false);
+  let [highConfidenceMappings, setHighConfidenceMappings] = useState<number>(0);
   const [mediumConfidenceMappings, setMediumConfidenceMappings] =
     useState<number>(0);
   const [lowConfidenceMappings, setLowConfidenceMappings] = useState<number>(0);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [hasInitializedFromAI, setHasInitializedFromAI] =
+    useState<boolean>(false);
+
+  const DEFAULT_CRM_FIELDS = useMemo(
+    () => [
+      "firstName",
+      "lastName",
+      "phone",
+      "email",
+      "agentEmail",
+      "country",
+      "city",
+    ],
+    []
+  );
 
   useEffect(() => {
     if (!fileBuffer) {
@@ -292,7 +314,7 @@ export default function CsvMapper({
             mapping.borderColor = "#BDBDBD";
           }
         });
-        console.log("xxxxxxxx",mappings);
+        console.log("xxxxxxxx", mappings);
         setHighConfidenceMappings(above90Mappings);
         setMediumConfidenceMappings(above60Mappings);
         setLowConfidenceMappings(below60Mappings);
@@ -307,13 +329,19 @@ export default function CsvMapper({
     runAI();
   }, [parsedCsv]);
 
-  // When AI mappings are ready, move to step 2
+  // When AI mappings are first ready, move to step 2 (only once)
   useEffect(() => {
-    if (!aiLoading && aiMappings && aiMappings.length > 0) {
+    if (
+      !aiLoading &&
+      aiMappings &&
+      aiMappings.length > 0 &&
+      !hasInitializedFromAI
+    ) {
       setHeaderCurrentStep(2);
       setCurrentStep(2);
+      setHasInitializedFromAI(true);
     }
-  }, [aiLoading, aiMappings]);
+  }, [aiLoading, aiMappings, hasInitializedFromAI]);
 
   let steps = [
     {
@@ -390,14 +418,92 @@ export default function CsvMapper({
               aiLoading={aiLoading}
               noOfColumns={numberOfColumns}
             />
-          ) : (
+          ) : currentStep === 2 ? (
             <RenderingStep2
               mappings={aiMappings as UIMapping[]}
               fieldsDetected={numberOfColumns}
               highConfidenceFields={highConfidenceMappings}
               customFields={lowConfidenceMappings}
             />
-          )}
+          ) : currentStep === 3 ? (
+            <div className="w-full h-full flex flex-col">
+              <div className="flex flex-col items-start justify-center w-full p-[24px] pb-[12px] gap-[16px] flex-shrink-0">
+                <p className="font-[Geist Variable] font-semibold text-[18px] leading-[100%] tracking-[0%] text-[#0E4259]">
+                  Smart Field Mapping
+                </p>
+                <p className="font-[Geist Variable] font-normal text-[17px] leading-[150%] tracking-[0%] text-[#68818C]">
+                  Review and adjust the AI-powered field mappings below. Click
+                  "Edit" next to any mapping to change it. You can map to
+                  existing CRM fields or create custom fields with different
+                  data types.
+                </p>
+              </div>
+              <div className="w-full flex-1 min-h-0 flex flex-col items-start justify-start gap-[16px] pt-[12px] px-[24px] pb-[24px] overflow-y-auto">
+                {(aiMappings as UIMapping[]).map((mapping, index) => {
+                  const available = Array.from(
+                    new Set([
+                      ...DEFAULT_CRM_FIELDS,
+                      ...((aiMappings as UIMapping[])
+                        .map((m) => m.targetField)
+                        .filter(Boolean) as string[]),
+                    ])
+                  );
+
+                  const handleSwapOrSet = (nextField: string) => {
+                    setAiMappings((prev) => {
+                      if (!prev) return prev;
+                      const copy = [...prev];
+                      const current = copy[index];
+                      const otherIndex = copy.findIndex(
+                        (m, i) => i !== index && m.targetField === nextField
+                      );
+                      if (otherIndex !== -1) {
+                        const temp = copy[otherIndex].targetField;
+                        copy[otherIndex] = {
+                          ...copy[otherIndex],
+                          targetField: current.targetField,
+                        };
+                        copy[index] = { ...current, targetField: temp };
+                      } else {
+                        copy[index] = { ...current, targetField: nextField };
+                      }
+                      return copy;
+                    });
+                  };
+
+                  const handleCreateCustomField = () => {
+                    const name =
+                      typeof window !== "undefined"
+                        ? window.prompt("New custom field name?")
+                        : null;
+                    if (!name) return;
+                    handleSwapOrSet(name);
+                  };
+
+                  const handleRemoveMapping = () => {
+                    setAiMappings((prev) => {
+                      if (!prev) return prev;
+                      const copy = [...prev];
+                      const current = copy[index];
+                      copy[index] = { ...current, targetField: "" };
+                      return copy;
+                    });
+                  };
+
+                  return (
+                    <FieldMappingComponent
+                      key={index}
+                      {...mapping}
+                      availableFields={available}
+                      onChangeMapping={handleSwapOrSet}
+                      onCreateCustomField={handleCreateCustomField}
+                      onRemoveMapping={handleRemoveMapping}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
         {/* main shit ends */}
         {/* footer begins */}
@@ -409,10 +515,26 @@ export default function CsvMapper({
             Cancel
           </button>
           <div className="flex items-center justify-center gap-[12px]">
-            <button className="rounded-[6px] border border-solid border-[#EEEEEE] bg-[#FFFFFF] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] text-[#222222] font-normal text-[16px] leading-[100%] tracking-[0%]">
+            <button
+              className="rounded-[6px] border border-solid border-[#EEEEEE] bg-[#FFFFFF] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] text-[#222222] font-normal text-[16px] leading-[100%] tracking-[0%]"
+              onClick={() => {
+                if (currentStep > 1) {
+                  setCurrentStep(currentStep - 1);
+                }
+              }}
+              disabled={currentStep === 1}
+            >
               Previous
             </button>
-            <button className="rounded-[6px] border border-solid bg-[#0E4259] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] font-normal text-[16px] leading-[100%] tracking-[0%] text-[#FFFFFF]">
+            <button
+              className="rounded-[6px] border border-solid bg-[#0E4259] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] font-normal text-[16px] leading-[100%] tracking-[0%] text-[#FFFFFF]"
+              onClick={() => {
+                if (currentStep < 3) {
+                  setCurrentStep(currentStep + 1);
+                  // setHeaderCurrentStep(currentStep + 1);
+                }
+              }}
+            >
               Next
             </button>
           </div>
