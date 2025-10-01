@@ -1,12 +1,9 @@
 import type { ParsedCsvColumns } from "@/utils/parseCsv";
 import { generateWithAI } from "@/lib/aiClientBrowser";
-
-export type TargetField =
-  | "firstName"
-  | "lastName"
-  | "phoneNo"
-  | "email"
-  | "agentEmail";
+import {
+  DEFAULT_CRM_FIELDS,
+  type TargetField,
+} from "@/interface/mappingInterface";
 
 export type HeaderMapping = {
   sourceField: string;
@@ -38,6 +35,9 @@ const headerKeywords: Record<TargetField, RegExp[]> = {
     /\bassignee\b.*\bemail\b/i,
     /\bagent\b/i,
   ],
+  country: [/\bcountry\b/i, /\bnation\b/i, /\bland\b/i],
+  city: [/\bcity\b/i, /\btown\b/i, /\bmunicipality\b/i],
+  intentType: [/\bintent\b/i, /\bpurpose\b/i, /\binterest\b/i, /\btype\b/i],
 };
 
 const valueRegex: Record<TargetField, RegExp> = {
@@ -46,6 +46,9 @@ const valueRegex: Record<TargetField, RegExp> = {
   phoneNo: /^(\+\d{1,3}[\s-]?)?(\(?\d{2,4}\)?[\s-]?)?[\d\s-]{6,}$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i,
   agentEmail: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i,
+  country: /^[A-Za-z][A-Za-z\s\-]{1,}$/,
+  city: /^[A-Za-z][A-Za-z\s\-]{1,}$/,
+  intentType: /^[A-Za-z][A-Za-z\s\-]{1,}$/,
 };
 
 const WEIGHT_HEADER_MATCH = 0.6;
@@ -80,13 +83,7 @@ function scoreValues(samples: string[], target: TargetField): number {
 
 export function mapCsvHeaders(parsed: ParsedCsvColumns): HeaderMapping[] {
   const mappings: HeaderMapping[] = [];
-  const targets: TargetField[] = [
-    "firstName",
-    "lastName",
-    "phoneNo",
-    "email",
-    "agentEmail",
-  ];
+  const targets: TargetField[] = [...DEFAULT_CRM_FIELDS];
 
   for (const [header, values] of Object.entries(parsed)) {
     const samples = values.slice(0, 5);
@@ -129,13 +126,7 @@ export async function mapCsvHeadersAI(
   model: string = "gemini-2.5-flash-lite"
 ): Promise<any> {
   console.log("mapping begins");
-  const targets: TargetField[] = [
-    "firstName",
-    "lastName",
-    "phoneNo",
-    "email",
-    "agentEmail",
-  ];
+  const targets: TargetField[] = [...DEFAULT_CRM_FIELDS];
 
   const samplesByHeader: Record<string, string[]> = {};
   for (const [header, values] of Object.entries(parsed)) {

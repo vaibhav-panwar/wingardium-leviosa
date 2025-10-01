@@ -4,17 +4,18 @@ import Image from "next/image";
 import { mapCsvHeadersAI } from "@/utils/mapCsvHeaders";
 import { parseCsv, type ParsedCsvColumns } from "@/utils/parseCsv";
 import FieldMappingComponent from "./fieldMappingComponent";
-import { addDocument, getDocuments } from "../firebase/firestore";
+import {
+  addDocument,
+  getDocuments,
+  updateDocument,
+} from "../firebase/firestore";
 import { useAuth } from "@/context/authContext";
 import { motion } from "framer-motion";
-
-type StepBoxProps = {
-  step: number;
-  title: string;
-  subtitle: string;
-  active: boolean;
-  completed: boolean;
-};
+import {
+  StepBoxProps,
+  UIMapping,
+  DEFAULT_CRM_FIELDS,
+} from "@/interface/mappingInterface";
 
 const StepBox = ({
   step,
@@ -61,7 +62,6 @@ const FieldMapping = ({
   bgColor,
   borderColor,
 }: UIMapping) => {
-  console.log(textColor, bgColor, borderColor);
   return (
     <div
       className={`w-full bg-white border-gray-200 border rounded-xl p-6 shadow-sm`}
@@ -88,7 +88,7 @@ const FieldMapping = ({
         <span className="text-gray-600 text-sm">Sample</span>
         {sampleValues.map((value, index) => (
           <span
-            key={index}
+            key={`${sourceField}-${index}`}
             className="rounded-[4px] gap-2 opacity-100 px-2 py-1 bg-[#F4F5F6] text-gray-600 text-sm"
           >
             {value}
@@ -143,7 +143,7 @@ const RenderingStep1 = ({
             alt="loading"
             width={280}
             height={178}
-            className="mb-[24px]" // Your existing class is untouched
+            className="mb-[24px]"
           />
         </motion.div>
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
@@ -160,18 +160,6 @@ const RenderingStep1 = ({
       </div>
     </div>
   );
-};
-
-type UIMapping = {
-  sourceField: string;
-  targetField: string;
-  matchPercentage: number;
-  sampleValues: string[];
-  textColor?: string;
-  bgColor?: string;
-  borderColor?: string;
-  outerBorderColor?: string;
-  shadowBoxColor?: string;
 };
 
 const RenderingStep2 = ({
@@ -225,7 +213,7 @@ const RenderingStep2 = ({
       </div>
       <div className="w-full flex-1 min-h-0 flex flex-col items-start justify-start gap-[16px] pt-[12px] px-[24px] pb-[24px] overflow-y-auto">
         {mappings.map((mapping, index) => (
-          <FieldMapping key={index} {...mapping} />
+          <FieldMapping key={`${mapping.sourceField}-${index}`} {...mapping} />
         ))}
       </div>
     </div>
@@ -236,10 +224,12 @@ const RenderingStep4 = ({
   totalContactsImported,
   contactsMerged,
   errors,
+  isWriting,
 }: {
   totalContactsImported: number;
   contactsMerged: number;
   errors: number;
+  isWriting?: boolean;
 }) => {
   return (
     <div className="w-full h-full">
@@ -301,6 +291,9 @@ const RenderingStep4 = ({
               </p>
             </div>
           </div>
+          <div className="w-full px-[200px] mt-2">
+            <SmartLoader isLoading={!!isWriting} />
+          </div>
         </div>
       </div>
     </div>
@@ -334,17 +327,10 @@ export default function CsvMapper({
   const [contactsToAdd, setContactsToAdd] = useState<any[]>([]);
   const [contactsMerged, setContactsMerged] = useState<any[]>([]);
   const [checksLoading, setChecksLoading] = useState<boolean>(false);
+  const [isWriting, setIsWriting] = useState<boolean>(false);
 
-  const DEFAULT_CRM_FIELDS = useMemo(
-    () => [
-      "firstName",
-      "lastName",
-      "phoneNo",
-      "email",
-      "agentEmail",
-      "country",
-      "city",
-    ],
+  const REQUIRED_TARGET_FIELDS = useMemo(
+    () => new Set(["firstName", "lastName", "phoneNo", "email", "agentEmail"]),
     []
   );
 
@@ -358,8 +344,6 @@ export default function CsvMapper({
       const parsed = parseCsv(text);
       setParsedCsv(parsed);
       setNumberOfColumns(Object.keys(parsed).length);
-      console.log(parseCsv);
-      console.log("CsvMapper parsed CSV:", parsed);
     } catch (err) {
       console.error("Failed to parse CSV in modal:", err);
       setParsedCsv(null);
@@ -372,7 +356,6 @@ export default function CsvMapper({
       try {
         setAiError(null);
         setAiLoading(true);
-        console.log("task begins");
         const mappings = await mapCsvHeadersAI(parsedCsv);
         let above90Mappings = 0;
         let above60Mappings = 0;
@@ -398,7 +381,6 @@ export default function CsvMapper({
             mapping.borderColor = "#BDBDBD";
           }
         });
-        console.log("task ends");
         setHighConfidenceMappings(above90Mappings);
         setMediumConfidenceMappings(above60Mappings);
         setLowConfidenceMappings(below60Mappings);
@@ -426,29 +408,32 @@ export default function CsvMapper({
     }
   }, [aiLoading, aiMappings, hasInitializedFromAI]);
 
-  let steps = [
-    {
-      number: 1,
-      title: "Detect Fields",
-      subtitle: "Review data structure",
-      active: headerCurrentStep === 1,
-      completed: headerCurrentStep > 1,
-    },
-    {
-      number: 2,
-      title: "Map Fields",
-      subtitle: "Connect to CRM Fields",
-      active: headerCurrentStep === 2,
-      completed: headerCurrentStep > 2,
-    },
-    {
-      number: 3,
-      title: "Final Checks",
-      subtitle: "For Duplicates or Errors",
-      active: headerCurrentStep === 3,
-      completed: headerCurrentStep > 3,
-    },
-  ];
+  const steps = useMemo(
+    () => [
+      {
+        number: 1,
+        title: "Detect Fields",
+        subtitle: "Review data structure",
+        active: headerCurrentStep === 1,
+        completed: headerCurrentStep > 1,
+      },
+      {
+        number: 2,
+        title: "Map Fields",
+        subtitle: "Connect to CRM Fields",
+        active: headerCurrentStep === 2,
+        completed: headerCurrentStep > 2,
+      },
+      {
+        number: 3,
+        title: "Final Checks",
+        subtitle: "For Duplicates or Errors",
+        active: headerCurrentStep === 3,
+        completed: headerCurrentStep > 3,
+      },
+    ],
+    [headerCurrentStep]
+  );
 
   const checkBeforeNextMove = (mappings: any[]) => {
     const requiredFields = [
@@ -495,6 +480,7 @@ export default function CsvMapper({
 
   const writeContactsToDatabase = async () => {
     try {
+      setIsWriting(true);
       // Helper function to chunk contacts into batches of 30
       const chunkContacts = (contacts: any[], chunkSize: number) => {
         const chunks = [];
@@ -514,9 +500,18 @@ export default function CsvMapper({
       // Write each batch sequentially to avoid overwhelming Firebase
       for (let i = 0; i < contactBatches.length; i++) {
         const batch = contactBatches[i];
-        const batchPromises = batch.map((contact) =>
-          addDocument("company/A5eWer5YT4GtsAClx90o/contacts", contact)
-        );
+        const batchPromises = batch.map((contact) => {
+          const { id, ...data } = contact || {};
+          if (id) {
+            return updateDocument(
+              "company/A5eWer5YT4GtsAClx90o/contacts",
+              id,
+              data,
+              true
+            );
+          }
+          return addDocument("company/A5eWer5YT4GtsAClx90o/contacts", data);
+        });
 
         await Promise.all(batchPromises);
         console.log(
@@ -540,6 +535,8 @@ export default function CsvMapper({
     } catch (error) {
       console.error("❌ Error writing contacts to database:", error);
       alert("Failed to write contacts to database. Please try again.");
+    } finally {
+      setIsWriting(false);
     }
   };
 
@@ -643,7 +640,7 @@ export default function CsvMapper({
       )
     );
 
-    const contactsToAdd = [];
+    const contactsToWrite: any[] = [];
     const errors = [];
     const duplicates = [];
     const uniqueContactsToAdd = [];
@@ -669,8 +666,6 @@ export default function CsvMapper({
       if (missingFields.length > 0) {
         errors.push({ row: i + 1, contact, missingFields });
       } else {
-        contactsToAdd.push(contact);
-
         const contactKey = `${contact.email}|${contact.phoneNo}`;
         if (existingContactKeys.has(contactKey)) {
           const matchingExisting = allExistingContacts.filter(
@@ -679,27 +674,20 @@ export default function CsvMapper({
               existing.phoneNo === contact.phoneNo
           );
           duplicates.push({ contact, existingContacts: matchingExisting });
+          const existingId = matchingExisting[0]?.id;
+          if (existingId) {
+            contactsToWrite.push({ ...contact, id: existingId });
+          }
         } else {
           uniqueContactsToAdd.push(contact);
+          contactsToWrite.push(contact);
         }
       }
     }
     setErrorContacts(errors);
     setContactsMerged(duplicates);
-    setContactsToAdd(uniqueContactsToAdd);
+    setContactsToAdd(contactsToWrite);
     setChecksLoading(false);
-
-    return {
-      contactsToAdd: uniqueContactsToAdd,
-      errors,
-      duplicates,
-      summary: {
-        total: rowCount,
-        valid: uniqueContactsToAdd.length,
-        errors: errors.length,
-        duplicates: duplicates.length,
-      },
-    };
   };
 
   return (
@@ -735,8 +723,9 @@ export default function CsvMapper({
         {/* const header ends */}
         {/* step box begins */}
         <div className="header w-full flex justify-between items-center py-[20px] px-[24px] border-b border-gray-200">
-          {steps.map((step, idx) => (
+          {steps.map((step) => (
             <StepBox
+              key={step.number}
               step={step.number}
               title={step.title}
               subtitle={step.subtitle}
@@ -789,6 +778,12 @@ export default function CsvMapper({
               </div>
               <div className="w-full flex-1 min-h-0 flex flex-col items-start justify-start gap-[16px] pt-[12px] px-[24px] pb-[24px] overflow-y-auto">
                 {(aiMappings as UIMapping[]).map((mapping, index) => {
+                  const mappedBy: Record<string, string> = (
+                    aiMappings as UIMapping[]
+                  ).reduce((acc: Record<string, string>, m: UIMapping) => {
+                    if (m.targetField) acc[m.targetField] = m.sourceField;
+                    return acc;
+                  }, {});
                   const available = Array.from(
                     new Set([
                       ...DEFAULT_CRM_FIELDS,
@@ -820,20 +815,17 @@ export default function CsvMapper({
                     });
                   };
 
-                  const handleCreateCustomField = () => {
-                    const name =
-                      typeof window !== "undefined"
-                        ? window.prompt("New custom field name?")
-                        : null;
-                    if (!name) return;
-                    handleSwapOrSet(name);
-                  };
-
                   const handleRemoveMapping = () => {
                     setAiMappings((prev) => {
                       if (!prev) return prev;
                       const copy = [...prev];
                       const current = copy[index];
+                      if (REQUIRED_TARGET_FIELDS.has(current.targetField)) {
+                        alert(
+                          `Cannot remove required field: ${current.targetField}. You can swap it with another mapping instead.`
+                        );
+                        return prev;
+                      }
                       copy[index] = { ...current, targetField: "" };
                       return copy;
                     });
@@ -845,8 +837,8 @@ export default function CsvMapper({
                       {...mapping}
                       availableFields={available}
                       onChangeMapping={handleSwapOrSet}
-                      onCreateCustomField={handleCreateCustomField}
                       onRemoveMapping={handleRemoveMapping}
+                      mappedBy={mappedBy}
                     />
                   );
                 })}
@@ -857,6 +849,7 @@ export default function CsvMapper({
               totalContactsImported={contactsToAdd.length}
               contactsMerged={contactsMerged.length}
               errors={errorContacts.length}
+              isWriting={isWriting}
             />
           ) : null}
         </div>
@@ -875,7 +868,8 @@ export default function CsvMapper({
                 currentStep === 1 ||
                 currentStep === 2 ||
                 aiLoading ||
-                checksLoading
+                checksLoading ||
+                isWriting
                   ? "bg-[#F5F5F5] text-[#CCCCCC] cursor-not-allowed"
                   : "bg-[#FFFFFF] text-[#222222] hover:bg-[#F9F9F9]"
               }`}
@@ -901,7 +895,7 @@ export default function CsvMapper({
             </button>
             <button
               className={`rounded-[6px] border border-solid gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] font-normal text-[16px] leading-[100%] tracking-[0%] ${
-                currentStep === 1 || aiLoading || checksLoading
+                currentStep === 1 || aiLoading || checksLoading || isWriting
                   ? "bg-[#F5F5F5] text-[#CCCCCC] cursor-not-allowed border-[#EEEEEE]"
                   : "bg-[#0E4259] text-[#FFFFFF] hover:bg-[#0A3447]"
               }`}
@@ -944,7 +938,11 @@ export default function CsvMapper({
               }}
               disabled={currentStep === 1 || aiLoading || checksLoading}
             >
-              {currentStep === 4 ? "Move to Contacts" : "Next"}
+              {currentStep === 4
+                ? isWriting
+                  ? "Writing..."
+                  : "Move to Contacts"
+                : "Next"}
             </button>
           </div>
         </div>

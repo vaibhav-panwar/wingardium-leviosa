@@ -13,8 +13,8 @@ export default function FieldMappingComponent({
   targetField,
   availableFields = [],
   onChangeMapping = () => {},
-  onCreateCustomField = () => {},
   onRemoveMapping = () => {},
+  mappedBy = {},
 }: {
   outerBorderColor?: string;
   shadowBoxColor?: string;
@@ -27,8 +27,8 @@ export default function FieldMappingComponent({
   targetField: string;
   availableFields?: string[];
   onChangeMapping?: (nextField: string) => void;
-  onCreateCustomField?: () => void;
   onRemoveMapping?: () => void;
+  mappedBy?: Record<string, string | undefined>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<string>(targetField);
@@ -119,15 +119,6 @@ export default function FieldMappingComponent({
                     >
                       Don’t import this field
                     </button>
-                    <button
-                      onClick={() => {
-                        setIsOpen(false);
-                        onCreateCustomField();
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-md hover:bg-[#F6F3FF] text-[#5B3DF5] text-sm"
-                    >
-                      Create Custom Field
-                    </button>
                   </div>
                   <div className="py-2">
                     <p className="px-3 pb-1 text-[12px] text-[#6B7280] font-medium">
@@ -140,14 +131,17 @@ export default function FieldMappingComponent({
                       ).map((field) => (
                         <li key={field}>
                           <button
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-[#F4F6FA] ${
+                            className={`w-full px-3 py-2 text-sm hover:bg-[#F4F6FA] flex items-center justify-between ${
                               selectedField === field
                                 ? "text-[#0051CC] font-semibold"
                                 : "text-[#0F172A]"
                             }`}
                             onClick={() => handleSelect(field)}
                           >
-                            {field}
+                            <span className="text-left">{field}</span>
+                            <span className="ml-4 text-xs text-[#6B7280]">
+                              {mappedBy[field] ? mappedBy[field] : ""}
+                            </span>
                           </button>
                         </li>
                       ))}
