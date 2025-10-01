@@ -4,7 +4,7 @@ import { generateWithAI } from "@/lib/aiClientBrowser";
 export type TargetField =
   | "firstName"
   | "lastName"
-  | "phone"
+  | "phoneNo"
   | "email"
   | "agentEmail";
 
@@ -24,7 +24,13 @@ const headerKeywords: Record<TargetField, RegExp[]> = {
     /\bfamily\b/i,
     /\bsirname\b/i,
   ],
-  phone: [/\bphone\b/i, /\bmobile\b/i, /\bcell\b/i, /\bcontact\b/i, /\btel\b/i],
+  phoneNo: [
+    /\bphone\b/i,
+    /\bmobile\b/i,
+    /\bcell\b/i,
+    /\bcontact\b/i,
+    /\btel\b/i,
+  ],
   email: [/\bemail\b/i, /\be-mail\b/i, /\bmail\b/i],
   agentEmail: [
     /\bagent\b.*\bemail\b/i,
@@ -37,7 +43,7 @@ const headerKeywords: Record<TargetField, RegExp[]> = {
 const valueRegex: Record<TargetField, RegExp> = {
   firstName: /^[A-Za-z][A-Za-z\-']{1,}$/,
   lastName: /^[A-Za-z][A-Za-z\-']{1,}$/,
-  phone: /^(\+\d{1,3}[\s-]?)?(\(?\d{2,4}\)?[\s-]?)?[\d\s-]{6,}$/,
+  phoneNo: /^(\+\d{1,3}[\s-]?)?(\(?\d{2,4}\)?[\s-]?)?[\d\s-]{6,}$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i,
   agentEmail: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i,
 };
@@ -77,7 +83,7 @@ export function mapCsvHeaders(parsed: ParsedCsvColumns): HeaderMapping[] {
   const targets: TargetField[] = [
     "firstName",
     "lastName",
-    "phone",
+    "phoneNo",
     "email",
     "agentEmail",
   ];
@@ -125,7 +131,7 @@ export async function mapCsvHeadersAI(
   const targets: TargetField[] = [
     "firstName",
     "lastName",
-    "phone",
+    "phoneNo",
     "email",
     "agentEmail",
   ];

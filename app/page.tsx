@@ -12,7 +12,7 @@ export default function Home() {
   const [isCsvUploaded, setIsCsvUploaded] = useState<boolean>(false);
   const [csvData, setCsvData] = useState<ParsedCsvColumns | null>(null);
   const [uploadedFileBuffer, setUploadedFileBuffer] =
-    useState<ArrayBuffer | null>(null);
+  useState<ArrayBuffer | null>(null);
   useEffect(() => {
     if (isCsvUploaded) {
       document.body.classList.add("overflow-hidden");

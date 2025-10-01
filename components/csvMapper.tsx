@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { SmartLoader } from "./loader";
 import Image from "next/image";
 import { mapCsvHeadersAI } from "@/utils/mapCsvHeaders";
 import { parseCsv, type ParsedCsvColumns } from "@/utils/parseCsv";
 import FieldMappingComponent from "./fieldMappingComponent";
+import { addDocument, getDocuments } from "../firebase/firestore";
+import { useAuth } from "@/context/authContext";
 
 type StepBoxProps = {
   step: number;
@@ -97,26 +99,33 @@ const FieldMapping = ({
 };
 
 const RenderingStep1 = ({
-  aiLoading = false,
-  noOfColumns = 0,
+  isLoading = false,
+  title1,
+  subtitle1,
+  imageSrc,
+  title2,
+  subtitle2,
 }: {
-  aiLoading?: boolean;
-  noOfColumns?: number;
+  isLoading?: boolean;
+  title1: string;
+  subtitle1: string;
+  imageSrc: string;
+  title2: string;
+  subtitle2: string;
 }) => {
   return (
     <div className="w-full h-full">
       <div className="flex flex-col p-[24px] w-full gap-[8px] items-start content-between">
         <p className="font-[Geist Variable] font-semibold text-[18px] leading-[100%] tracking-[0%] text-[#0E4259]">
-          AI Column Detection...
+          {title1}
         </p>
         <p className="font-[Geist Variable] font-normal text-[16px] leading-[120%] tracking-[0%] text-[#68818C]">
-          Analyzing {noOfColumns} columns and matching with CRM fields using
-          AI...
+          {subtitle1}
         </p>
       </div>
       <div className="flex flex-col items-center justify-center w-full">
         <Image
-          src="./step1Loading.svg"
+          src={imageSrc}
           alt="loading"
           width={480}
           height={178}
@@ -124,14 +133,13 @@ const RenderingStep1 = ({
         />
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
           <p className="font-[Geist Variable] font-medium text-[20px] leading-[100%] tracking-[-1%] text-center text-[#5883C9]">
-            Auto Detecting Field Mapping...
+            {title2}
           </p>
           <p className="font-[Geist Variable] font-normal text-[16px] leading-[150%] tracking-[-0.15px] text-center align-middle text-[#7782AD]">
-            Matching spreasheets columns to CRM fields using intelligent pattern
-            recognition...
+            {subtitle2}
           </p>
           <div className="w-full px-[200px]">
-            <SmartLoader isLoading={aiLoading} />
+            <SmartLoader isLoading={isLoading} />
           </div>
         </div>
       </div>
@@ -209,23 +217,66 @@ const RenderingStep2 = ({
   );
 };
 
-const RenderingStep3 = ({ mappings }: { mappings: UIMapping[] }) => {
+const RenderingStep4 = ({
+  totalContactsImported,
+  contactsMerged,
+  errors,
+}: {
+  totalContactsImported: number;
+  contactsMerged: number;
+  errors: number;
+}) => {
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex flex-col items-start justify-center w-full p-[24px] pb-[12px] gap-[16px] flex-shrink-0">
+    <div className="w-full h-full">
+      <div className="flex flex-col p-[24px] w-full gap-[8px] items-start content-between">
         <p className="font-[Geist Variable] font-semibold text-[18px] leading-[100%] tracking-[0%] text-[#0E4259]">
-          Smart Field Mapping
+          Final Checks Complete
         </p>
-        <p className="font-[Geist Variable] font-normal text-[17px] leading-[150%] tracking-[0%] text-[#68818C]">
-          Review and adjust the AI-powered field mappings below. Click "Edit"
-          next to any mapping to change it. You can map to existing CRM fields
-          or create custom fields with different data types.
+        <p className="font-[Geist Variable] font-normal text-[16px] leading-[120%] tracking-[0%] text-[#68818C]">
+          No duplicates or errors found — your data is clean and ready to
+          import.
         </p>
       </div>
-      <div className="w-full flex-1 min-h-0 flex flex-col items-start justify-start gap-[16px] pt-[12px] px-[24px] pb-[24px] overflow-y-auto">
-        {mappings.map((mapping, index) => (
-          <FieldMappingComponent key={index} {...mapping} />
-        ))}
+      <div className="flex flex-col items-center justify-center w-full">
+        <Image
+          src="./finalState.svg"
+          alt="loading"
+          width={480}
+          height={178}
+          className="mb-[24px]"
+        />
+        <div className="w-full flex flex-col items-center justify-center gap-[16px]">
+          <p className="font-[Geist Variable] font-medium text-[20px] leading-[100%] tracking-[-1%] text-center text-[#5883C9]">
+            "No Issue Founds! This Database entres are good to move to contacts
+            section."
+          </p>
+          <div className="flex items-center justify-center rounded-[12px] border border-[0.5px] gap-2 opacity-100 pt-[7px] pr-2 pb-[7px] pl-2 border-[#EEEEEE]">
+            <div className="w-[208px] flex flex-col items-center justify-center rounded-[12px] gap-2 opacity-100 pt-3 pr-2 pb-3 pl-[6px] bg-[#F2FFED]">
+              <p className="font-chivo font-medium text-sm leading-[120%] tracking-normal text-[#008D0E]">
+                Total Contacts Imported
+              </p>
+              <p className="font-chivo font-semibold text-2xl leading-none tracking-normal text-[#008D0E]">
+                {totalContactsImported}
+              </p>
+            </div>
+            <div className="w-[208px] flex flex-col items-center justify-center rounded-[12px] gap-2 opacity-100 pt-3 pr-2 pb-3 pl-[6px] bg-[#FFF7EA]">
+              <p className="font-chivo font-medium text-sm leading-[120%] tracking-normal text-[#B67C0C]">
+                Contacts Merged
+              </p>
+              <p className="font-chivo font-semibold text-2xl leading-none tracking-normal text-[#B67C0C]">
+                {contactsMerged}
+              </p>
+            </div>
+            <div className="w-[208px] flex flex-col items-center justify-center rounded-[12px] gap-2 opacity-100 pt-3 pr-2 pb-3 pl-[6px] bg-[#FFEDED]">
+              <p className="font-chivo font-medium text-sm leading-[120%] tracking-normal text-[#C4494B]">
+                Errors
+              </p>
+              <p className="font-chivo font-semibold text-2xl leading-none tracking-normal text-[#C4494B]">
+                {errors}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -238,13 +289,15 @@ export default function CsvMapper({
   handleCloseModal: () => void;
   fileBuffer?: ArrayBuffer | null;
 }) {
-  let [headerCurrentStep, setHeaderCurrentStep] = useState<number>(1);
-  let [currentStep, setCurrentStep] = useState<number>(1);
-  let [numberOfColumns, setNumberOfColumns] = useState<number>(0);
-  let [parsedCsv, setParsedCsv] = useState<ParsedCsvColumns | null>(null);
-  let [aiMappings, setAiMappings] = useState<any[] | null>(null);
-  let [aiLoading, setAiLoading] = useState(false);
-  let [highConfidenceMappings, setHighConfidenceMappings] = useState<number>(0);
+  const { currentUser } = useAuth();
+  const [headerCurrentStep, setHeaderCurrentStep] = useState<number>(1);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [numberOfColumns, setNumberOfColumns] = useState<number>(0);
+  const [parsedCsv, setParsedCsv] = useState<ParsedCsvColumns | null>(null);
+  const [aiMappings, setAiMappings] = useState<any[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [highConfidenceMappings, setHighConfidenceMappings] =
+    useState<number>(0);
   const [mediumConfidenceMappings, setMediumConfidenceMappings] =
     useState<number>(0);
   const [lowConfidenceMappings, setLowConfidenceMappings] = useState<number>(0);
@@ -252,11 +305,16 @@ export default function CsvMapper({
   const [hasInitializedFromAI, setHasInitializedFromAI] =
     useState<boolean>(false);
 
+  const [errorContacts, setErrorContacts] = useState<any[]>([]);
+  const [contactsToAdd, setContactsToAdd] = useState<any[]>([]);
+  const [contactsMerged, setContactsMerged] = useState<any[]>([]);
+  const [checksLoading, setChecksLoading] = useState<boolean>(false);
+
   const DEFAULT_CRM_FIELDS = useMemo(
     () => [
       "firstName",
       "lastName",
-      "phone",
+      "phoneNo",
       "email",
       "agentEmail",
       "country",
@@ -329,7 +387,6 @@ export default function CsvMapper({
     runAI();
   }, [parsedCsv]);
 
-  // When AI mappings are first ready, move to step 2 (only once)
   useEffect(() => {
     if (
       !aiLoading &&
@@ -366,6 +423,189 @@ export default function CsvMapper({
       completed: headerCurrentStep > 3,
     },
   ];
+
+  const checkBeforeNextMove = (mappings: any[]) => {
+    const requiredFields = [
+      "firstName",
+      "lastName",
+      "phoneNo",
+      "email",
+      "agentEmail",
+    ];
+    const mappedFields = mappings
+      .map((mapping) => mapping.targetField)
+      .filter(Boolean);
+
+    const missingFields = requiredFields.filter(
+      (field) => !mappedFields.includes(field)
+    );
+
+    if (missingFields.length > 0) {
+      alert(`Missing required field mappings: ${missingFields.join(", ")}`);
+      return false;
+    }
+
+    return true;
+  };
+
+  const checksAndMappingFunctions = async (
+    mappings: any[],
+    parsedCsv: any
+  ): Promise<any> => {
+    setChecksLoading(true);
+    const fieldMapping = new Map();
+    mappings.forEach((mapping) => {
+      if (mapping.sourceField && mapping.targetField) {
+        fieldMapping.set(mapping.targetField, mapping.sourceField);
+      }
+    });
+
+    const agentsSourceField = fieldMapping.get("agentEmail");
+    const agentsData = parsedCsv[agentsSourceField] || [];
+    const rowCount = agentsData.length;
+
+    const chunkArray = (array: any[], chunkSize: number) => {
+      const chunks = [];
+      for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+      }
+      return chunks;
+    };
+
+    const emailPhonePairs = [];
+
+    for (let i = 0; i < rowCount; i++) {
+      const email = parsedCsv[fieldMapping.get("email")]?.[i] || "";
+      const phone = parsedCsv[fieldMapping.get("phoneNo")]?.[i] || "";
+      if (email && phone) {
+        emailPhonePairs.push({ email, phoneNo: phone });
+      }
+    }
+
+    const uniquePairs = Array.from(
+      new Set(emailPhonePairs.map((pair) => `${pair.email}|${pair.phoneNo}`))
+    ).map((pairString) => {
+      const [email, phoneNo] = pairString.split("|");
+      return { email, phoneNo };
+    });
+
+    const agentEmailChunks = chunkArray(agentsData, 30);
+    const emailChunks = chunkArray(
+      uniquePairs.map((pair) => pair.email),
+      30
+    );
+    const phoneChunks = chunkArray(
+      uniquePairs.map((pair) => pair.phoneNo),
+      30
+    );
+
+    // Execute all queries in parallel
+    const [
+      agentsDocsResults,
+      existingContactsByEmail,
+      existingContactsByPhone,
+    ] = await Promise.all([
+      Promise.all(
+        agentEmailChunks.map((chunk) =>
+          getDocuments("company/A5eWer5YT4GtsAClx90o/users", {
+            where: [["email", "in", chunk]],
+          })
+        )
+      ).then((results) => results.flat()),
+
+      Promise.all(
+        emailChunks.map((chunk) =>
+          getDocuments("company/A5eWer5YT4GtsAClx90o/contacts", {
+            where: [["email", "in", chunk]],
+          })
+        )
+      ).then((results) => results.flat()),
+
+      // Get existing contacts by phone in batches
+      Promise.all(
+        phoneChunks.map((chunk) =>
+          getDocuments("company/A5eWer5YT4GtsAClx90o/contacts", {
+            where: [["phoneNo", "in", chunk]],
+          })
+        )
+      ).then((results) => results.flat()),
+    ]);
+
+    const agentsDocs = agentsDocsResults;
+
+    const allExistingContacts = existingContactsByEmail.filter((contact) =>
+      existingContactsByPhone.some(
+        (phoneContact) => phoneContact.id === contact.id
+      )
+    );
+
+    const emailToUidMap = new Map(
+      agentsDocs.map((agent) => [agent.email, agent.uid])
+    );
+    const existingContactKeys = new Set(
+      allExistingContacts.map(
+        (contact) => `${contact.email}|${contact.phoneNo}`
+      )
+    );
+
+    const contactsToAdd = [];
+    const errors = [];
+    const duplicates = [];
+    const uniqueContactsToAdd = [];
+
+    const currentTime = new Date().toISOString();
+
+    for (let i = 0; i < rowCount; i++) {
+      const contact = {
+        firstName: parsedCsv[fieldMapping.get("firstName")]?.[i] || "",
+        lastName: parsedCsv[fieldMapping.get("lastName")]?.[i] || "",
+        email: parsedCsv[fieldMapping.get("email")]?.[i] || "",
+        phoneNo: parsedCsv[fieldMapping.get("phoneNo")]?.[i] || "",
+        agentUid: emailToUidMap.get(agentsData[i]) || currentUser?.uid,
+        createdOn: currentTime,
+      };
+
+      const missingFields = [];
+      if (!contact.firstName.trim()) missingFields.push("firstName");
+      if (!contact.lastName.trim()) missingFields.push("lastName");
+      if (!contact.email.trim()) missingFields.push("email");
+      if (!contact.phoneNo.trim()) missingFields.push("phoneNo");
+
+      if (missingFields.length > 0) {
+        errors.push({ row: i + 1, contact, missingFields });
+      } else {
+        contactsToAdd.push(contact);
+
+        const contactKey = `${contact.email}|${contact.phoneNo}`;
+        if (existingContactKeys.has(contactKey)) {
+          const matchingExisting = allExistingContacts.filter(
+            (existing) =>
+              existing.email === contact.email &&
+              existing.phoneNo === contact.phoneNo
+          );
+          duplicates.push({ contact, existingContacts: matchingExisting });
+        } else {
+          uniqueContactsToAdd.push(contact);
+        }
+      }
+    }
+    setErrorContacts(errors);
+    setContactsMerged(duplicates);
+    setContactsToAdd(uniqueContactsToAdd);
+    setChecksLoading(false);
+
+    return {
+      contactsToAdd: uniqueContactsToAdd,
+      errors,
+      duplicates,
+      summary: {
+        total: rowCount,
+        valid: uniqueContactsToAdd.length,
+        errors: errors.length,
+        duplicates: duplicates.length,
+      },
+    };
+  };
 
   return (
     <div className="w-[1032px] flex items-start p-[1px] shadow-2xl rounded-xl bg-white animate-[zoomIn_0.2s_ease-out_forwards]">
@@ -415,8 +655,22 @@ export default function CsvMapper({
         <div className="header w-full flex justify-between items-center border-b border-gray-200 h-[540px]">
           {aiLoading || !aiMappings ? (
             <RenderingStep1
-              aiLoading={aiLoading}
-              noOfColumns={numberOfColumns}
+              isLoading={aiLoading}
+              title1="AI Column Detection..."
+              subtitle1={`Analyzing ${numberOfColumns} columns and matching with CRM fields using AI...`}
+              imageSrc="./step1Loading.svg"
+              title2="Auto Detecting Field Mapping..."
+              subtitle2="Matching spreasheets columns to CRM fields using intelligent pattern
+            recognition..."
+            />
+          ) : checksLoading ? (
+            <RenderingStep1
+              isLoading={checksLoading}
+              title1="Checking for Duplicates & Errors…"
+              subtitle1="Reviewing the entry data to ensure no duplicate contacts or invalid data slip through."
+              imageSrc="./completeChecks.svg"
+              title2="Running Final Checks…"
+              subtitle2="Scanning entries for duplicates, missing details, or errors before the move to contact section completes…"
             />
           ) : currentStep === 2 ? (
             <RenderingStep2
@@ -503,6 +757,12 @@ export default function CsvMapper({
                 })}
               </div>
             </div>
+          ) : currentStep === 4 ? (
+            <RenderingStep4
+              totalContactsImported={contactsToAdd.length}
+              contactsMerged={contactsMerged.length}
+              errors={errorContacts.length}
+            />
           ) : null}
         </div>
         {/* main shit ends */}
@@ -528,10 +788,34 @@ export default function CsvMapper({
             </button>
             <button
               className="rounded-[6px] border border-solid bg-[#0E4259] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] font-normal text-[16px] leading-[100%] tracking-[0%] text-[#FFFFFF]"
-              onClick={() => {
+              onClick={async () => {
                 if (currentStep < 3) {
                   setCurrentStep(currentStep + 1);
-                  // setHeaderCurrentStep(currentStep + 1);
+                } else if (currentStep === 3) {
+                  // Validate mappings before proceeding
+                  if (!checkBeforeNextMove(aiMappings || [])) {
+                    return; // Don't proceed if validation fails
+                  }
+
+                  // Execute checks and mapping functions
+                  try {
+                    await checksAndMappingFunctions(
+                      aiMappings || [],
+                      parsedCsv
+                    );
+                    // Move to step 4 after checks complete
+                    setCurrentStep(4);
+                    setHeaderCurrentStep(3);
+                  } catch (error) {
+                    console.error("Error during checks:", error);
+                    // Revert to previous state on error
+                    setCurrentStep(3);
+                    setHeaderCurrentStep(2);
+                    setChecksLoading(false);
+                    alert(
+                      "An error occurred during the final checks. Please try again."
+                    );
+                  }
                 }
               }}
             >

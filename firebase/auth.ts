@@ -6,24 +6,23 @@ export const signInWithGoogle = async (): Promise<User> => {
   const provider = new GoogleAuthProvider();
   const result = await signInWithPopup(auth, provider);
   const user = result.user;
-
-  // Ensure a user doc exists in Firestore (collection: "users")
   const email = user.email || "";
   const displayName = user.displayName || "";
+  const uid = user.uid;
   if (email) {
-    const existing = await getDocuments("users", {
+    const existing = await getDocuments("company/A5eWer5YT4GtsAClx90o/users", {
       where: [["email", "==", email]],
       limit: 1,
     });
     if (existing.length === 0) {
-      await addDocument("users", {
+      await addDocument("company/A5eWer5YT4GtsAClx90o/users", {
+        uid,
         email,
         name: displayName,
         createdAt: Date.now(),
       });
     }
   }
-
   return user;
 };
 
