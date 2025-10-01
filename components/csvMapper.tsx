@@ -68,7 +68,8 @@ const FieldMapping = ({
     >
       <div className="flex items-center gap-4 mb-4">
         <div
-          className={`bg-[${bgColor}] text-[${textColor}] px-3 py-1 border-[1px] border-[${borderColor}] rounded-md text-sm font-semibold`}
+          className="px-3 py-1 border rounded-md text-sm font-semibold"
+          style={{ backgroundColor: bgColor, color: textColor, borderColor }}
         >
           {matchPercentage}%
         </div>
@@ -258,7 +259,7 @@ const RenderingStep4 = ({
             alt="loading"
             width={280}
             height={178}
-            className="mb-[24px]" 
+            className="mb-[24px]"
           />
         </motion.div>
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
@@ -379,6 +380,8 @@ export default function CsvMapper({
             mapping.textColor = "#555555";
             mapping.bgColor = "#F2F2F2";
             mapping.borderColor = "#BDBDBD";
+            mapping.outerBorderColor = "#FFD3D3";
+            mapping.shadowBoxColor = "#E1070714";
           }
         });
         setHighConfidenceMappings(above90Mappings);
@@ -508,7 +511,6 @@ export default function CsvMapper({
 
         await Promise.all(batchPromises);
       }
-
 
       alert(
         `Successfully imported ${contactsToAdd.length} contacts to the database!`
@@ -753,8 +755,7 @@ export default function CsvMapper({
                 <p className="font-[Geist Variable] font-normal text-[17px] leading-[150%] tracking-[0%] text-[#68818C]">
                   Review and adjust the AI-powered field mappings below. Click
                   "Edit" next to any mapping to change it. You can map to
-                  existing CRM fields or create custom fields with different
-                  data types.
+                  existing CRM fields.
                 </p>
               </div>
               <div className="w-full flex-1 min-h-0 flex flex-col items-start justify-start gap-[16px] pt-[12px] px-[24px] pb-[24px] overflow-y-auto">
@@ -887,7 +888,7 @@ export default function CsvMapper({
                   setHeaderCurrentStep(2);
                 } else if (currentStep === 3) {
                   if (!checkBeforeNextMove(aiMappings || [])) {
-                    return; 
+                    return;
                   }
 
                   try {

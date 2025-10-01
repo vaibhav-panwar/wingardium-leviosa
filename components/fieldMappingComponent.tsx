@@ -61,9 +61,13 @@ export default function FieldMappingComponent({
     <div
       className={`w-full bg-[#FDFDFD] flex flex-col items-center justify-center ${
         matchPercentage < 60 ? " pb-[0px] px-[0px]" : " "
-      } rounded-[16px] border-[1px] border-[${outerBorderColor}] ${
-        shadowBoxColor ? "shadow-[0px_0px_24px_0px_#E1070714]" : ""
-      }`}
+      } rounded-[16px] border-[1px]`}
+      style={{
+        borderColor: outerBorderColor,
+        boxShadow: shadowBoxColor
+          ? `0px 0px 24px 0px ${shadowBoxColor}`
+          : undefined,
+      }}
     >
       <div className="w-full flex items-start justify-between gap-[24px] px-[24px] py-[20px]">
         <div className="w-full flex flex-col items-start justify-between gap-[12px] gap-[12px]">
@@ -72,7 +76,12 @@ export default function FieldMappingComponent({
               DATABASE FIELD
             </p>
             <p
-              className={`bg-[${bgColor}] text-[${textColor}] px-3 py-1 border-[1px] border-[${borderColor}] rounded-md text-sm font-semibold`}
+              className="px-3 py-1 border rounded-md text-sm font-semibold"
+              style={{
+                backgroundColor: bgColor,
+                color: textColor,
+                borderColor,
+              }}
             >
               {matchPercentage}%
             </p>

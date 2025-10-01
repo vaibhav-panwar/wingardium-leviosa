@@ -159,6 +159,7 @@ export async function mapCsvHeadersAI(
     " 2. How well the sample values fit the expected type of the target field (names, emails, phone numbers, etc.).",
     "- Sample values must echo the provided samples (up to 5).",
     "- Return ONLY JSON. No prose, no explanation.",
+    "- Please remember to assign one mapping to one target and vice versa",
     "Samples by header:",
     JSON.stringify(samplesByHeader),
     "Example of the required JSON shape:",
