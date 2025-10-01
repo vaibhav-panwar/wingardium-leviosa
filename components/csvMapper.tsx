@@ -448,6 +448,78 @@ export default function CsvMapper({
     return true;
   };
 
+  const resetAllStatesAndCloseModal = () => {
+    // Reset all states to default
+    setHeaderCurrentStep(1);
+    setCurrentStep(1);
+    setNumberOfColumns(0);
+    setParsedCsv(null);
+    setAiMappings(null);
+    setAiLoading(false);
+    setHighConfidenceMappings(0);
+    setMediumConfidenceMappings(0);
+    setLowConfidenceMappings(0);
+    setAiError(null);
+    setHasInitializedFromAI(false);
+    setErrorContacts([]);
+    setContactsToAdd([]);
+    setContactsMerged([]);
+    setChecksLoading(false);
+
+    // Close the modal by calling the parent's handleCloseModal
+    handleCloseModal();
+  };
+
+  const writeContactsToDatabase = async () => {
+    try {
+      // Helper function to chunk contacts into batches of 30
+      const chunkContacts = (contacts: any[], chunkSize: number) => {
+        const chunks = [];
+        for (let i = 0; i < contacts.length; i += chunkSize) {
+          chunks.push(contacts.slice(i, i + chunkSize));
+        }
+        return chunks;
+      };
+
+      // Split contacts into batches of 30
+      const contactBatches = chunkContacts(contactsToAdd, 30);
+
+      console.log(
+        `📝 Writing ${contactsToAdd.length} contacts in ${contactBatches.length} batches...`
+      );
+
+      // Write each batch sequentially to avoid overwhelming Firebase
+      for (let i = 0; i < contactBatches.length; i++) {
+        const batch = contactBatches[i];
+        const batchPromises = batch.map((contact) =>
+          addDocument("company/A5eWer5YT4GtsAClx90o/contacts", contact)
+        );
+
+        await Promise.all(batchPromises);
+        console.log(
+          `✅ Batch ${i + 1}/${contactBatches.length} completed (${
+            batch.length
+          } contacts)`
+        );
+      }
+
+      console.log(
+        `🎉 Successfully wrote all ${contactsToAdd.length} contacts to database!`
+      );
+
+      // Show success message
+      alert(
+        `Successfully imported ${contactsToAdd.length} contacts to the database!`
+      );
+
+      // Reset states and close modal
+      resetAllStatesAndCloseModal();
+    } catch (error) {
+      console.error("❌ Error writing contacts to database:", error);
+      alert("Failed to write contacts to database. Please try again.");
+    }
+  };
+
   const checksAndMappingFunctions = async (
     mappings: any[],
     parsedCsv: any
@@ -628,7 +700,7 @@ export default function CsvMapper({
               </p>
             </div>
           </div>
-          <button className="right-box" onClick={handleCloseModal}>
+          <button className="right-box" onClick={resetAllStatesAndCloseModal}>
             <Image
               src="/minimiseButton.svg"
               alt="close"
@@ -770,34 +842,60 @@ export default function CsvMapper({
         <div className="header w-full flex justify-between items-center py-[20px] px-[16px] bg-[#FBFBFF] rounded-b-[12px]">
           <button
             className="rounded-[6px] border border-solid border-[#EEEEEE] bg-[#FFFFFF] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] text-[#222222] font-normal text-[16px] leading-[100%] tracking-[0%]"
-            onClick={handleCloseModal}
+            onClick={resetAllStatesAndCloseModal}
           >
             Cancel
           </button>
           <div className="flex items-center justify-center gap-[12px]">
             <button
-              className="rounded-[6px] border border-solid border-[#EEEEEE] bg-[#FFFFFF] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] text-[#222222] font-normal text-[16px] leading-[100%] tracking-[0%]"
+              className={`rounded-[6px] border border-solid border-[#EEEEEE] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] font-normal text-[16px] leading-[100%] tracking-[0%] ${
+                currentStep === 1 ||
+                currentStep === 2 ||
+                aiLoading ||
+                checksLoading
+                  ? "bg-[#F5F5F5] text-[#CCCCCC] cursor-not-allowed"
+                  : "bg-[#FFFFFF] text-[#222222] hover:bg-[#F9F9F9]"
+              }`}
               onClick={() => {
-                if (currentStep > 1) {
+                if (currentStep > 1 && !aiLoading && !checksLoading) {
                   setCurrentStep(currentStep - 1);
+                  // Update header step based on current step
+                  if (currentStep === 3) {
+                    setHeaderCurrentStep(2);
+                  } else if (currentStep === 4) {
+                    setHeaderCurrentStep(2);
+                  }
                 }
               }}
-              disabled={currentStep === 1}
+              disabled={
+                currentStep === 1 ||
+                currentStep === 2 ||
+                aiLoading ||
+                checksLoading
+              }
             >
               Previous
             </button>
             <button
-              className="rounded-[6px] border border-solid bg-[#0E4259] gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] font-normal text-[16px] leading-[100%] tracking-[0%] text-[#FFFFFF]"
+              className={`rounded-[6px] border border-solid gap-2 p-[10px_16px] opacity-100 font-[Geist Variable] font-normal text-[16px] leading-[100%] tracking-[0%] ${
+                currentStep === 1 || aiLoading || checksLoading
+                  ? "bg-[#F5F5F5] text-[#CCCCCC] cursor-not-allowed border-[#EEEEEE]"
+                  : "bg-[#0E4259] text-[#FFFFFF] hover:bg-[#0A3447]"
+              }`}
               onClick={async () => {
-                if (currentStep < 3) {
-                  setCurrentStep(currentStep + 1);
+                if (currentStep === 1 || aiLoading || checksLoading) {
+                  // Step 1 or loading: Next button disabled
+                  return;
+                } else if (currentStep === 2) {
+                  // Step 2: Move to step 3 and update header
+                  setCurrentStep(3);
+                  setHeaderCurrentStep(2);
                 } else if (currentStep === 3) {
-                  // Validate mappings before proceeding
+                  // Step 3: Validate and execute checks
                   if (!checkBeforeNextMove(aiMappings || [])) {
                     return; // Don't proceed if validation fails
                   }
 
-                  // Execute checks and mapping functions
                   try {
                     await checksAndMappingFunctions(
                       aiMappings || [],
@@ -816,10 +914,14 @@ export default function CsvMapper({
                       "An error occurred during the final checks. Please try again."
                     );
                   }
+                } else if (currentStep === 4) {
+                  // Step 4: Move to contacts (final action)
+                  await writeContactsToDatabase();
                 }
               }}
+              disabled={currentStep === 1 || aiLoading || checksLoading}
             >
-              Next
+              {currentStep === 4 ? "Move to Contacts" : "Next"}
             </button>
           </div>
         </div>

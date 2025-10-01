@@ -12,7 +12,7 @@ export default function Home() {
   const [isCsvUploaded, setIsCsvUploaded] = useState<boolean>(false);
   const [csvData, setCsvData] = useState<ParsedCsvColumns | null>(null);
   const [uploadedFileBuffer, setUploadedFileBuffer] =
-  useState<ArrayBuffer | null>(null);
+    useState<ArrayBuffer | null>(null);
   useEffect(() => {
     if (isCsvUploaded) {
       document.body.classList.add("overflow-hidden");
@@ -78,7 +78,14 @@ export default function Home() {
         {isCsvUploaded && (
           <div className="absolute top-[46px] bottom-[46px] left-[240px] right-[240px] h-fit w-fit flex items-center justify-center z-50">
             <CsvMapper
-              handleCloseModal={() => setIsCsvUploaded(false)}
+              handleCloseModal={() => {
+                setIsCsvUploaded(false);
+                setUploadedFileBuffer(null);
+                // Reset the file input to allow re-uploading the same file
+                if (hiddenFileInput.current) {
+                  hiddenFileInput.current.value = "";
+                }
+              }}
               fileBuffer={uploadedFileBuffer}
             />
           </div>
