@@ -8,8 +8,8 @@ import {
 export type HeaderMapping = {
   sourceField: string;
   targetField: TargetField;
-  matchPercentage: number; // 0-100
-  sampleValues: string[]; // up to 5
+  matchPercentage: number;
+  sampleValues: string[];
 };
 
 const headerKeywords: Record<TargetField, RegExp[]> = {
@@ -61,7 +61,7 @@ function scoreHeaderName(header: string, target: TargetField): number {
   for (const re of patterns) {
     if (re.test(normalized)) hits++;
   }
-  // agentEmail should strongly prefer headers that include both agent and email
+
   if (target === "agentEmail") {
     const strong = /\bagent\b.*\bemail\b|\bemail\b.*\bagent\b/i.test(
       normalized

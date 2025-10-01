@@ -258,7 +258,7 @@ const RenderingStep4 = ({
             alt="loading"
             width={280}
             height={178}
-            className="mb-[24px]" // Your existing class is untouched
+            className="mb-[24px]" 
           />
         </motion.div>
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
@@ -481,7 +481,6 @@ export default function CsvMapper({
   const writeContactsToDatabase = async () => {
     try {
       setIsWriting(true);
-      // Helper function to chunk contacts into batches of 30
       const chunkContacts = (contacts: any[], chunkSize: number) => {
         const chunks = [];
         for (let i = 0; i < contacts.length; i += chunkSize) {
@@ -490,14 +489,8 @@ export default function CsvMapper({
         return chunks;
       };
 
-      // Split contacts into batches of 30
       const contactBatches = chunkContacts(contactsToAdd, 30);
 
-      console.log(
-        `📝 Writing ${contactsToAdd.length} contacts in ${contactBatches.length} batches...`
-      );
-
-      // Write each batch sequentially to avoid overwhelming Firebase
       for (let i = 0; i < contactBatches.length; i++) {
         const batch = contactBatches[i];
         const batchPromises = batch.map((contact) => {
@@ -514,26 +507,16 @@ export default function CsvMapper({
         });
 
         await Promise.all(batchPromises);
-        console.log(
-          `✅ Batch ${i + 1}/${contactBatches.length} completed (${
-            batch.length
-          } contacts)`
-        );
       }
 
-      console.log(
-        `🎉 Successfully wrote all ${contactsToAdd.length} contacts to database!`
-      );
 
-      // Show success message
       alert(
         `Successfully imported ${contactsToAdd.length} contacts to the database!`
       );
 
-      // Reset states and close modal
       resetAllStatesAndCloseModal();
     } catch (error) {
-      console.error("❌ Error writing contacts to database:", error);
+      console.error("Error writing contacts to database:", error);
       alert("Failed to write contacts to database. Please try again.");
     } finally {
       setIsWriting(false);
@@ -591,7 +574,6 @@ export default function CsvMapper({
       30
     );
 
-    // Execute all queries in parallel
     const [
       agentsDocsResults,
       existingContactsByEmail,
@@ -613,7 +595,6 @@ export default function CsvMapper({
         )
       ).then((results) => results.flat()),
 
-      // Get existing contacts by phone in batches
       Promise.all(
         phoneChunks.map((chunk) =>
           getDocuments("company/A5eWer5YT4GtsAClx90o/contacts", {
@@ -876,7 +857,6 @@ export default function CsvMapper({
               onClick={() => {
                 if (currentStep > 1 && !aiLoading && !checksLoading) {
                   setCurrentStep(currentStep - 1);
-                  // Update header step based on current step
                   if (currentStep === 3) {
                     setHeaderCurrentStep(2);
                   } else if (currentStep === 4) {
@@ -901,16 +881,13 @@ export default function CsvMapper({
               }`}
               onClick={async () => {
                 if (currentStep === 1 || aiLoading || checksLoading) {
-                  // Step 1 or loading: Next button disabled
                   return;
                 } else if (currentStep === 2) {
-                  // Step 2: Move to step 3 and update header
                   setCurrentStep(3);
                   setHeaderCurrentStep(2);
                 } else if (currentStep === 3) {
-                  // Step 3: Validate and execute checks
                   if (!checkBeforeNextMove(aiMappings || [])) {
-                    return; // Don't proceed if validation fails
+                    return; 
                   }
 
                   try {
@@ -918,12 +895,10 @@ export default function CsvMapper({
                       aiMappings || [],
                       parsedCsv
                     );
-                    // Move to step 4 after checks complete
                     setCurrentStep(4);
                     setHeaderCurrentStep(3);
                   } catch (error) {
                     console.error("Error during checks:", error);
-                    // Revert to previous state on error
                     setCurrentStep(3);
                     setHeaderCurrentStep(2);
                     setChecksLoading(false);
@@ -932,7 +907,6 @@ export default function CsvMapper({
                     );
                   }
                 } else if (currentStep === 4) {
-                  // Step 4: Move to contacts (final action)
                   await writeContactsToDatabase();
                 }
               }}
