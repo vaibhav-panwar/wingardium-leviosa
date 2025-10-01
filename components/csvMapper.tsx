@@ -233,8 +233,7 @@ const RenderingStep4 = ({
           Final Checks Complete
         </p>
         <p className="font-[Geist Variable] font-normal text-[16px] leading-[120%] tracking-[0%] text-[#68818C]">
-          Your data is clean and ready to
-          import.
+          Your data is clean and ready to import.
         </p>
       </div>
       <div className="flex flex-col items-center justify-center w-full">
@@ -247,8 +246,7 @@ const RenderingStep4 = ({
         />
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
           <p className="font-[Geist Variable] font-medium text-[20px] leading-[100%] tracking-[-1%] text-center text-[#5883C9]">
-            This Database entries are good to move to contacts
-            section."
+            This Database entries are good to move to contacts section."
           </p>
           <div className="flex items-center justify-center rounded-[12px] border border-[0.5px] gap-2 opacity-100 pt-[7px] pr-2 pb-[7px] pl-2 border-[#EEEEEE]">
             <div className="w-[208px] flex flex-col items-center justify-center rounded-[12px] gap-2 opacity-100 pt-3 pr-2 pb-3 pl-[6px] bg-[#F2FFED]">
@@ -347,6 +345,7 @@ export default function CsvMapper({
       try {
         setAiError(null);
         setAiLoading(true);
+        console.log("task begins");
         const mappings = await mapCsvHeadersAI(parsedCsv);
         let above90Mappings = 0;
         let above60Mappings = 0;
@@ -372,7 +371,7 @@ export default function CsvMapper({
             mapping.borderColor = "#BDBDBD";
           }
         });
-        console.log("xxxxxxxx", mappings);
+        console.log("task ends");
         setHighConfidenceMappings(above90Mappings);
         setMediumConfidenceMappings(above60Mappings);
         setLowConfidenceMappings(below60Mappings);

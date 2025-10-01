@@ -126,8 +126,9 @@ export function mapCsvHeaders(parsed: ParsedCsvColumns): HeaderMapping[] {
 
 export async function mapCsvHeadersAI(
   parsed: ParsedCsvColumns,
-  model: string = "gemini-2.5-flash"
+  model: string = "gemini-2.5-flash-lite"
 ): Promise<any> {
+  console.log("mapping begins");
   const targets: TargetField[] = [
     "firstName",
     "lastName",
@@ -140,6 +141,8 @@ export async function mapCsvHeadersAI(
   for (const [header, values] of Object.entries(parsed)) {
     samplesByHeader[header] = values.slice(0, 5);
   }
+
+  console.log("mapping rises");
 
   const responseShapeExample = [
     {
@@ -172,7 +175,9 @@ export async function mapCsvHeadersAI(
   ].join("\n");
 
   try {
+    console.log("before api call wkjekweje");
     const aiText = await generateWithAI(prompt, model);
+    console.log("after api call wjkweewewjkwejk");
     console.log(aiText);
     let stringifyJson = aiText.text || aiText;
     const jsonMatch = stringifyJson.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);

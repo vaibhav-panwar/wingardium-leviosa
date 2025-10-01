@@ -1,6 +1,6 @@
 export async function generateWithAI(
   prompt: string,
-  model = "gemini-2.5-flash"
+  model = "gemini-2.5-flash-lite"
 ) {
   try {
     const res = await fetch("/api/gemini", {

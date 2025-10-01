@@ -33,7 +33,6 @@ export default function Home() {
         const data = await getDocuments(
           "company/A5eWer5YT4GtsAClx90o/contacts"
         );
-        console.log("dtaa", data);
         if (!cancelled) {
           setContacts(data);
         }

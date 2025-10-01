@@ -3,7 +3,7 @@ import { getGenAI } from "@/lib/genai";
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, model = "gemini-2.5-flash" } = await req.json();
+    const { prompt, model = "gemini-2.5-flash-lite" } = await req.json();
 
     if (!prompt) {
       return NextResponse.json(
