@@ -536,6 +536,7 @@ export default function CsvMapper({
         fieldMapping.set(mapping.targetField, mapping.sourceField);
       }
     });
+    console.log(fieldMapping);
 
     const agentsSourceField = fieldMapping.get("agentEmail");
     const agentsData = parsedCsv[agentsSourceField] || [];
@@ -630,7 +631,9 @@ export default function CsvMapper({
 
     const currentTime = new Date().toISOString();
 
+    console.log(fieldMapping.get("agentEmail"));
     for (let i = 0; i < rowCount; i++) {
+      console.log(fieldMapping.get("agentEmail")?.[i]);
       const contact = {
         firstName: parsedCsv[fieldMapping.get("firstName")]?.[i] || "",
         lastName: parsedCsv[fieldMapping.get("lastName")]?.[i] || "",
@@ -638,7 +641,7 @@ export default function CsvMapper({
         phoneNo: parsedCsv[fieldMapping.get("phoneNo")]?.[i] || "",
         agentUid: emailToUidMap.get(agentsData[i]) || currentUser?.uid,
         agentEmail: emailToUidMap.get(agentsData[i])
-          ? fieldMapping.get("agentEmail")?.[i]
+          ? parsedCsv[fieldMapping.get("agentEmail")]?.[i]
           : currentUser?.email,
         createdOn: currentTime,
         ...(parsedCsv[fieldMapping.get("country")]?.[i] && {
