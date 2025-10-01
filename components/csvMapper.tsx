@@ -641,6 +641,15 @@ export default function CsvMapper({
           ? fieldMapping.get("agentEmail")?.[i]
           : currentUser?.email,
         createdOn: currentTime,
+        ...(parsedCsv[fieldMapping.get("country")]?.[i] && {
+          country: parsedCsv[fieldMapping.get("country")]?.[i],
+        }),
+        ...(parsedCsv[fieldMapping.get("city")]?.[i] && {
+          country: parsedCsv[fieldMapping.get("city")]?.[i],
+        }),
+        ...(parsedCsv[fieldMapping.get("intentType")]?.[i] && {
+          country: parsedCsv[fieldMapping.get("intentType")]?.[i],
+        }),
       };
 
       const missingFields = [];
