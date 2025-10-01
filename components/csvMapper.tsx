@@ -637,6 +637,9 @@ export default function CsvMapper({
         email: parsedCsv[fieldMapping.get("email")]?.[i] || "",
         phoneNo: parsedCsv[fieldMapping.get("phoneNo")]?.[i] || "",
         agentUid: emailToUidMap.get(agentsData[i]) || currentUser?.uid,
+        agentEmail: emailToUidMap.get(agentsData[i])
+          ? fieldMapping.get("agentEmail")?.[i]
+          : currentUser?.email,
         createdOn: currentTime,
       };
 
