@@ -6,6 +6,7 @@ import { parseCsv, type ParsedCsvColumns } from "@/utils/parseCsv";
 import FieldMappingComponent from "./fieldMappingComponent";
 import { addDocument, getDocuments } from "../firebase/firestore";
 import { useAuth } from "@/context/authContext";
+import { motion } from "framer-motion";
 
 type StepBoxProps = {
   step: number;
@@ -123,14 +124,28 @@ const RenderingStep1 = ({
           {subtitle1}
         </p>
       </div>
-      <div className="flex flex-col items-center justify-center w-full">
-        <Image
-          src={imageSrc}
-          alt="loading"
-          width={480}
-          height={178}
-          className="mb-[24px]"
-        />
+      <div className="flex flex-col items-center justify-center w-full ">
+        <motion.div
+          initial={{ opacity: 0.8, scale: 0.95 }}
+          animate={{
+            opacity: [0.8, 1, 0.8],
+            scale: [0.95, 1.05, 0.95],
+          }}
+          transition={{
+            duration: 0.8,
+            repeat: Infinity,
+            repeatType: "loop",
+            ease: "easeInOut",
+          }}
+        >
+          <Image
+            src={imageSrc}
+            alt="loading"
+            width={280}
+            height={178}
+            className="mb-[24px]" // Your existing class is untouched
+          />
+        </motion.div>
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
           <p className="font-[Geist Variable] font-medium text-[20px] leading-[100%] tracking-[-1%] text-center text-[#5883C9]">
             {title2}
@@ -237,13 +252,25 @@ const RenderingStep4 = ({
         </p>
       </div>
       <div className="flex flex-col items-center justify-center w-full">
-        <img
-          src="./finalState.svg"
-          alt="loading"
-          width={480}
-          height={178}
-          className="mb-[24px]"
-        />
+        <motion.div
+          initial={{ opacity: 0.8, scale: 0.95 }}
+          animate={{
+            opacity: [0.8, 1, 0.8],
+            scale: [0.95, 1.05, 0.95],
+          }}
+          transition={{
+            duration: 0.8,
+            ease: "easeOut",
+          }}
+        >
+          <Image
+            src="./checkComplete.svg"
+            alt="loading"
+            width={280}
+            height={178}
+            className="mb-[24px]" // Your existing class is untouched
+          />
+        </motion.div>
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
           <p className="font-[Geist Variable] font-medium text-[20px] leading-[100%] tracking-[-1%] text-center text-[#5883C9]">
             This Database entries are good to move to contacts section."
@@ -726,7 +753,7 @@ export default function CsvMapper({
               isLoading={aiLoading}
               title1="AI Column Detection..."
               subtitle1={`Analyzing ${numberOfColumns} columns and matching with CRM fields using AI...`}
-              imageSrc="./step1Loading.svg"
+              imageSrc="./aiLoading.svg"
               title2="Auto Detecting Field Mapping..."
               subtitle2="Matching spreasheets columns to CRM fields using intelligent pattern
             recognition..."
@@ -736,7 +763,7 @@ export default function CsvMapper({
               isLoading={checksLoading}
               title1="Checking for Duplicates & Errors…"
               subtitle1="Reviewing the entry data to ensure no duplicate contacts or invalid data slip through."
-              imageSrc="./completeChecks.svg"
+              imageSrc="./shield_svg.svg"
               title2="Running Final Checks…"
               subtitle2="Scanning entries for duplicates, missing details, or errors before the move to contact section completes…"
             />
