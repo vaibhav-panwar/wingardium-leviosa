@@ -233,12 +233,12 @@ const RenderingStep4 = ({
           Final Checks Complete
         </p>
         <p className="font-[Geist Variable] font-normal text-[16px] leading-[120%] tracking-[0%] text-[#68818C]">
-          No duplicates or errors found — your data is clean and ready to
+          Your data is clean and ready to
           import.
         </p>
       </div>
       <div className="flex flex-col items-center justify-center w-full">
-        <Image
+        <img
           src="./finalState.svg"
           alt="loading"
           width={480}
@@ -247,7 +247,7 @@ const RenderingStep4 = ({
         />
         <div className="w-full flex flex-col items-center justify-center gap-[16px]">
           <p className="font-[Geist Variable] font-medium text-[20px] leading-[100%] tracking-[-1%] text-center text-[#5883C9]">
-            "No Issue Founds! This Database entres are good to move to contacts
+            This Database entries are good to move to contacts
             section."
           </p>
           <div className="flex items-center justify-center rounded-[12px] border border-[0.5px] gap-2 opacity-100 pt-[7px] pr-2 pb-[7px] pl-2 border-[#EEEEEE]">
@@ -449,7 +449,6 @@ export default function CsvMapper({
   };
 
   const resetAllStatesAndCloseModal = () => {
-    // Reset all states to default
     setHeaderCurrentStep(1);
     setCurrentStep(1);
     setNumberOfColumns(0);
@@ -465,8 +464,6 @@ export default function CsvMapper({
     setContactsToAdd([]);
     setContactsMerged([]);
     setChecksLoading(false);
-
-    // Close the modal by calling the parent's handleCloseModal
     handleCloseModal();
   };
 

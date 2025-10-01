@@ -3,14 +3,16 @@ import { useAuth } from "@/context/authContext";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/firebase/auth";
 import { ProtectedRoute } from "@/components/protectedRoutes";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { parseCsv, type ParsedCsvColumns } from "@/utils/parseCsv";
 import CsvMapper from "../components/csvMapper";
+import { getDocuments } from "@/firebase/firestore";
 
 export default function Home() {
   const hiddenFileInput: any = useRef(null);
   const [isCsvUploaded, setIsCsvUploaded] = useState<boolean>(false);
-  const [csvData, setCsvData] = useState<ParsedCsvColumns | null>(null);
+  const [contacts, setContacts] = useState<any>([]);
+  const [isContactsLoading, setIsContactsLoading] = useState<boolean>(false);
   const [uploadedFileBuffer, setUploadedFileBuffer] =
     useState<ArrayBuffer | null>(null);
   useEffect(() => {
@@ -23,6 +25,38 @@ export default function Home() {
       document.body.classList.remove("overflow-hidden");
     };
   }, [isCsvUploaded]);
+  useEffect(() => {
+    let cancelled = false;
+    const getContactsData = async (): Promise<void> => {
+      setIsContactsLoading(true);
+      try {
+        const data = await getDocuments(
+          "company/A5eWer5YT4GtsAClx90o/contacts"
+        );
+        console.log("dtaa", data);
+        if (!cancelled) {
+          setContacts(data);
+        }
+      } catch (error: unknown) {
+        if (!cancelled) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          alert(`Failed to fetch contacts: ${message}`);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsContactsLoading(false);
+        }
+      }
+    };
+    if (!isCsvUploaded) {
+      getContactsData();
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [isCsvUploaded]);
+
   const handleInputBtnClick = () => {
     hiddenFileInput?.current?.click();
   };
@@ -55,24 +89,91 @@ export default function Home() {
   return (
     <ProtectedRoute>
       <div className="relative">
-        {/* Main content */}
         <div className={isCsvUploaded ? "blur-sm pointer-events-none" : ""}>
-          <button className="bg-black text-white" onClick={handleSignout}>
-            sign out
-          </button>
-          <h1>Hello World</h1>
-          <div onClick={handleInputBtnClick}>
-            <p>Please Upload File</p>
-            <input
-              type="file"
-              data-testid="file-input"
-              className="hidden"
-              accept=".csv,text/csv"
-              onChange={handleInputChange}
-              ref={hiddenFileInput}
-            />
+          <div className="header w-full flex item-center justify-between bg-black py-[14px] px-[80px]">
+            <h1 className="text-white font-[Geist Variable] text-[28px]">
+              Kendal
+            </h1>
+            <div className="flex items-cent justify-center gap-[28px]">
+              <button
+                className="bg-white text-black py-[8px] px-[8px] text-[18px] rounded-[8px]"
+                onClick={handleSignout}
+              >
+                Sign out
+              </button>
+              <div
+                className="flex items-center justify-center cursor-pointer bg-white rounded-[12px] px-[8px] "
+                onClick={handleInputBtnClick}
+              >
+                <p className="text-black">Upload File</p>
+                <input
+                  type="file"
+                  data-testid="file-input"
+                  className="hidden"
+                  accept=".csv,text/csv"
+                  onChange={handleInputChange}
+                  ref={hiddenFileInput}
+                />
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Contacts Table */}
+        {!isCsvUploaded && (
+          <div className="px-[80px] py-6">
+            {isContactsLoading ? (
+              <p className="text-gray-600">Loading contacts…</p>
+            ) : contacts?.length === 0 ? (
+              <p className="text-gray-600">No contacts found.</p>
+            ) : (
+              <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        First Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phone
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Agent Email
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {contacts.map((c: any, idx: number) => (
+                      <tr key={c.id || idx} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {c?.firstName || ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {c?.lastName || ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {c?.phoneNo || ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {c?.email || ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {c?.agentEmail || ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* CsvMapper overlay */}
         {isCsvUploaded && (

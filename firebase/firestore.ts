@@ -15,7 +15,6 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-
 export const addDocument = async <T extends Record<string, any>>(
   collectionPath: string,
   data: T,
@@ -87,6 +86,7 @@ export const getDocuments = async <T = Record<string, any>>(
   }
 
   const snap = await getDocs(q);
+  console.log("snap", snap);
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) }));
 };
 
