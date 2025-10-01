@@ -645,10 +645,10 @@ export default function CsvMapper({
           country: parsedCsv[fieldMapping.get("country")]?.[i],
         }),
         ...(parsedCsv[fieldMapping.get("city")]?.[i] && {
-          country: parsedCsv[fieldMapping.get("city")]?.[i],
+          city: parsedCsv[fieldMapping.get("city")]?.[i],
         }),
         ...(parsedCsv[fieldMapping.get("intentType")]?.[i] && {
-          country: parsedCsv[fieldMapping.get("intentType")]?.[i],
+          intentType: parsedCsv[fieldMapping.get("intentType")]?.[i],
         }),
       };
 
